@@ -92,6 +92,7 @@ def crawl_issue(browse_url: str) -> Dict[str, str]:
     created = get_child_text(item, "created")
     updated = get_child_text(item, "updated")
     resolved = get_child_text(item, "resolved")
+    description = strip_html(get_child_text(item, "description"))
 
     row = {
         "Issue Key": issue_key,
@@ -106,6 +107,8 @@ def crawl_issue(browse_url: str) -> Dict[str, str]:
         "Created Epoch": to_epoch_millis(created),
         "Updated": updated,
         "Resolved": resolved,
+        "Description": description,
+        "Comments": parse_comments(item),
         "URL": browse_url,
     }
 
@@ -151,6 +154,45 @@ def main() -> None:
 
     print(f"Saved issue data to {output_file}")
 
+def strip_html(text: str) -> str:
+    """Remove HTML tags and unescape HTML entities."""
+    if not text:
+        return ""
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</p\s*>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    return clean_text(text)
+
+def parse_comments(item: ET.Element) -> str:
+    """
+    Extract all comments from the XML.
+    Each comment is joined into one field separated by ' || '.
+    """
+    comments: List[str] = []
+
+    comments_parent = item.find("comments")
+    if comments_parent is None:
+        return ""
+
+    for comment in comments_parent.findall("comment"):
+        author = clean_text(comment.attrib.get("author", ""))
+        created = clean_text(comment.attrib.get("created", ""))
+        body = strip_html("".join(comment.itertext()))
+
+        parts = []
+        if author:
+            parts.append(author)
+        if created:
+            parts.append(created)
+        if body:
+            parts.append(body)
+
+        comment_text = ": ".join(parts)
+        if comment_text:
+            comments.append(comment_text)
+
+    return " || ".join(comments)
 
 if __name__ == "__main__":
     main()
