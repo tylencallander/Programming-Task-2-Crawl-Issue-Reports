@@ -28,13 +28,6 @@ It then writes the extracted data to a CSV file with one row for the issue.
 
 ## Installation
 
-### 1. Clone or download the project
-
-```bash
-git clone <your-repo-url>
-cd <your-project-folder>
-```
-
 ### 1. Run project
 ```bash
 python jira_issue_crawler.py https://issues.apache.org/jira/browse/CAMEL-10597
