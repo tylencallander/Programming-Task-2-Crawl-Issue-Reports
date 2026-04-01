@@ -12,12 +12,12 @@ HEADERS = {
     "User-Agent": "jira-issue-crawler/1.0"
 }
 
-
+# Normalize whitespace in text by collapsing repeated spaces
 def clean_text(text: str) -> str:
     """Collapse repeated whitespace and trim the result."""
     return re.sub(r"\s+", " ", text).strip() if text else ""
 
-
+# Convert Jira date formats to epoch milliseconds
 def to_epoch_millis(date_str: str) -> str:
     """
     Convert Jira date strings into epoch milliseconds.
@@ -42,25 +42,25 @@ def to_epoch_millis(date_str: str) -> str:
 
     return ""
 
-
+# Extract the issue key from a Jira browse URL using regex
 def extract_issue_key(url: str) -> str:
     """Extract the issue key from a Jira browse URL."""
     match = re.search(r"/browse/([A-Z0-9\-]+)", url)
     return match.group(1) if match else ""
 
-
+# Construct the URL for fetching issue XML from Apache Jira
 def build_xml_url(issue_key: str) -> str:
     """Build the public Jira XML export URL for the issue."""
     return f"https://issues.apache.org/jira/si/jira.issueviews:issue-xml/{issue_key}/{issue_key}.xml"
 
-
+# Fetch and parse XML content from the given URL
 def get_xml_root(url: str) -> ET.Element:
     """Download the XML and parse it into an ElementTree root."""
     response = requests.get(url, headers=HEADERS, timeout=30)
     response.raise_for_status()
     return ET.fromstring(response.content)
 
-
+# Retrieve cleaned text content from a specific child element
 def get_child_text(parent: ET.Element, tag_name: str) -> str:
     """Return cleaned text for the first direct child tag, or empty string."""
     child = parent.find(tag_name)
@@ -68,7 +68,7 @@ def get_child_text(parent: ET.Element, tag_name: str) -> str:
         return ""
     return clean_text("".join(child.itertext()))
 
-
+# Download issue from public Jira and extract key metadata fields
 def crawl_issue(browse_url: str) -> Dict[str, str]:
     """
     Crawl one public Jira issue and return the required fields.
@@ -114,7 +114,7 @@ def crawl_issue(browse_url: str) -> Dict[str, str]:
 
     return row
 
-
+# Write crawled issue data to a CSV file with proper formatting
 def write_csv(row: Dict[str, str], output_file: str) -> None:
     """Write one crawled issue row to a CSV file."""
     fieldnames = [
@@ -140,7 +140,7 @@ def write_csv(row: Dict[str, str], output_file: str) -> None:
         writer.writeheader()
         writer.writerow(row)
 
-
+# Main entry point that orchestrates crawling and saving issue data
 def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python jira_issue_crawler.py <jira_issue_url> [output.csv]")
@@ -154,6 +154,7 @@ def main() -> None:
 
     print(f"Saved issue data to {output_file}")
 
+# Remove HTML tags and entities from text while preserving newlines
 def strip_html(text: str) -> str:
     """Remove HTML tags and unescape HTML entities."""
     if not text:
@@ -164,6 +165,7 @@ def strip_html(text: str) -> str:
     text = html.unescape(text)
     return clean_text(text)
 
+# Extract and format all comments from the XML element into a delimited string
 def parse_comments(item: ET.Element) -> str:
     """
     Extract all comments from the XML.
